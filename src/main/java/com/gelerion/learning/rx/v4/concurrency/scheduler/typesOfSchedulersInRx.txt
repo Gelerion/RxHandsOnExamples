@@ -1,0 +1,59 @@
+    Schedulers.newThread()
+This scheduler simply starts a new thread every time it is requested via subscribeOn() or observeOn(). newThread() is
+hardly ever a good choice, not only because of the latency involved when starting a thread, but also because this
+thread is not reused. Stack space must be allocated up front (typically around one megabyte, as controlled by the
+-Xss parameter of the JVM) and the operating system must start new native thread. When the Worker is done, the thread
+simply terminates. This scheduler can be useful only when tasks are coarse-grained: it takes a lot of time to complete
+but there are very few of them, so that threads are unlikely to be reused at all. In practice, following Schedulers.io()
+is almost always a better choice.
+
+    Schedulers.io()
+This scheduler is similar to newThread(), but already started threads are recycled and can possibly handle future requests.
+This implementation works similarly to ThreadPoolExecutor from java.util.concurrent with an unbounded pool of threads.
+Every time a new Worker is requested, either a new thread is started (and later kept idle for some time) or the idle
+one is reused.
+The name io() is not a coincidence. Consider using this scheduler for I/O bound tasks which require very little CPU
+resources. However they tend to take quite some time, waiting for network or disk. Thus, it is a good idea to have a
+relatively big pool of threads. Still, be careful with unbounded resources of any kind—in case of slow or unresponsive
+external dependencies like web services, io() scheduler might start an enormous number of threads, leading to your very
+own application becoming unresponsive, as well.
+
+    Schedulers.computation()
+You should use a computation scheduler when tasks are entirely CPU-bound; that is, they require computational power and
+have no blocking code (reading from disk, network, sleeping, waiting for lock, etc.) Because each task executed on this
+scheduler is supposed to fully utilize one CPU core, executing more such tasks in parallel than there are available
+cores would not bring much value. Therefore, computation() scheduler by default limits the number of threads running
+in parallel to the value of availableProcessors(), as found in the Runtime.getRuntime() utility class.
+If for some reason you need a different number of threads than the default, you can always use the
+rx.scheduler.max-computation-threads system property. By taking less threads you ensure that there is always one or
+more CPU cores idle, and even under heavy load, computation() thread pool does not saturate your server. It is not
+possible to have more computation threads than cores.
+computation() scheduler uses unbounded queue in front of every thread, so if the task is scheduled but all cores
+are occupied, they are queued. In case of load peak, this scheduler will keep the number of threads limited. However,
+the queue just before each thread will keep growing.
+
+    Schedulers.from(Executor executor)
+Schedulers are internally more complex than Executors from java.util.concurrent, so a separate abstraction was needed.
+But because they are conceptually quite similar, unsurprisingly there is a wrapper that can turn Executor into Scheduler
+using the from() factory method
+
+    Schedulers.immediate()
+Schedulers.immediate() is a special scheduler that invokes a task within the client thread in a blocking fashion,
+rather than asynchronously. Using it is pointless unless some part of your API requires providing a scheduler, whereas
+you are absolutely fine with default behavior of Observable, not involving any threading at all. In fact, subscribing
+to an Observable (more on that in a second) via immediate() Scheduler typically has the same effect as not subscribing
+with any particular scheduler at all. In general, avoid this scheduler, it blocks the calling thread and is of limited
+use.
+
+    Schedulers.trampoline()
+The trampoline() scheduler is very similar to immediate() because it also schedules tasks in the same thread,
+effectively blocking. However, as opposed to immediate(), the upcoming task is executed when all previously scheduled
+tasks complete. immediate() invokes a given task right away, whereas trampoline() waits for the current task to finish.
+Trampoline is a pattern in functional programming that allows implementing recursion without infinitely growing the call
+stack. This is best explained with an example, first involving immediate(). By the way, notice that we do not interact
+directly with a Scheduler instance but first create a Worker
+
+    Schedulers.test()
+This Scheduler is used only for testing purposes, and you will never see it in production code. Its main advantage is
+the ability to arbitrarily advance the clock, simulating time passing by. Schedulers alone are not very interesting.
+If you want to discover how they work internally and how to implement your own, check out the next section.

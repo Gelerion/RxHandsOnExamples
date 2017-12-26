@@ -1,0 +1,4 @@
+Knowing both of these, we ask several independent travel agencies to find Flight
+and we book the Ticket in whichever provider was first to return—promoting the fastest
+and most reactive one. This last requirement is especially difficult to implement, and
+prior to Java 8 required ExecutorCompletionService to effectively find the fastest task

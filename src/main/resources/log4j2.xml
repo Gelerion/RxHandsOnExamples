@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="error">
+
+    <Appenders>
+        <Console name="sql" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %class{36} %L %M - %msg%xEx%n"/>
+            <Filters>
+                <MarkerFilter marker="SQL" onMatch="ACCEPT" onMismatch="DENY"/>
+            </Filters>
+        </Console>
+
+        <File name="file" fileName="logs/app.log">
+            <JsonLayout compact="true" eventEol="true"/>
+        </File>
+
+    </Appenders>
+
+    <Loggers>
+        <Root level="trace">
+            <AppenderRef ref="file"/>
+        </Root>
+    </Loggers>
+
+</Configuration>

@@ -1,0 +1,7 @@
+https://github.com/nurkiewicz/rxjava-book-examples
+
+Rx2 Design:
+https://github.com/ReactiveX/RxJava/blob/2.x/DESIGN.md
+
+What's different in 2.0:
+https://github.com/ReactiveX/RxJava/wiki/What's-different-in-2.0

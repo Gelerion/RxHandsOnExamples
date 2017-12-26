@@ -1,0 +1,17 @@
+The simplest onBackpressureBuffer() operator unconditionally buffers all upstream events and serves only
+the requested amount of data to downstream subscribers:
+
+    .onBackpressureBuffer()
+
+The second parameter is optional; it is a callback invoked when the bounded buffer of 1,000 elements is full—when
+despite buffering Subscriber still cannot process events at a satisfying pace. It does not allow any recovery,
+so expect MissingBackpressureException immediately following the warning message. We do at least we have control
+over the buffer, but not the limits of the hardware or operating system.
+
+    .onBackpressureBuffer(1000, () -> log.warn("Buffer full"))
+
+An alternative to onBackpressureBuffer() is onBackpressureDrop(), which simply discards all events
+that appeared without prior request().
+
+    .onBackpressureDrop(dish -> log.warn("Throw away {}", dish))
+    .onBackpressureLatest()

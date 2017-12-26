@@ -1,0 +1,8 @@
+Other important operators that support custom Scheduler are:
+    interval(),
+    range(),
+    timer(),
+    repeat(),
+    skip(),
+    take(),
+    timeout()

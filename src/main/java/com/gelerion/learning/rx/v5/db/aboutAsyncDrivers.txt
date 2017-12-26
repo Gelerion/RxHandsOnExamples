@@ -1,0 +1,30 @@
+There are reasons for JDBC to remain blocking. Web servers can easily handle hundreds of thousands of open connections;
+for example, if they just occasionally stream small bits of data. Database systems, on the other hand, perform several
+more or less similar steps for each client query:
+    - Query parsing (CPU-bound) translates a String containing a query into a parse tree
+    - Query optimizer (CPU-bound) evaluates the query against various rules and statistics, trying to build an execution plan
+    - Query executor (I/O-bound) traverses database storage and finds appropriate tuples to return
+    - Result set (network-bound) is serialized and pushed back to the client
+
+Clearly, every database needs a lot of resources to perform a query. Typically, the majority of time is actually spent
+executing the query and disks (spinning or SSD) are not very parallel by design. Therefore, there is a limited amount
+of concurrent queries that a database system can and should perform until it saturates. This limit largely depends on
+the actual database engine being used and the hardware on which it’s running. There are also many other less-obvious
+aspects like locks, context switches, and CPU cache lines exhaustion. You should expect around a few hundred queries
+per second. This is very little compared to, for example, the hundreds of thousands of open HTTP connections, easily
+achievable with nonblocking APIs.
+
+Knowing that throughput of the database is severely limited by hardware, having fully and entirely reactive drivers
+does not make that much sense after all. Technically, you can implement a wire protocol on top of Netty or RxNetty
+and never block the client thread. In fact, there are numerous nonstandard, independently developed approaches
+(see postgresql-async, postgres-async-driver, adbcj, and finagle-mysql), all trying to implement a wire protocol
+of a particular database with a nonblocking networking stack. But knowing that JVM can handle hundreds to thousands
+of threads without much hassle, there does not seem to be much benefit derived from
+rewriting the well-established JDBC API from the ground up. Even Slick from commonly used Lightbend reactive stack p
+owered by Akka toolkit uses JDBC underneath. There are also community-led projects bridging between RxJava and
+JDBC, such as rxjava-jdbc.
+
+The advice for interacting with relational databases is to actually have a dedicated, well-tuned thread pool and
+isolate the blocking code there. The rest of your application can be highly reactive and operate on just a handful
+of threads, but from a pragmatic point of view, just deal with JDBC because trying to replace it with something
+more reactive could bring a lot of pain for no apparent gain.
